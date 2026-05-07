@@ -1,0 +1,276 @@
+defaults:
+  - _self_
+  - task: 2_seg_real_stack_cube
+
+
+horizon: 8
+n_obs_steps: 1
+n_action_steps: 8
+
+robot_ip: '192.168.1.9'
+frequency: 30
+output: ./output
+data_dir: ./data/${task.name}   # path to save collected data, including point clouds, images, and robot states
+
+load_checkpoint_from: checkpoints/example.ckpt
+
+policy_name: 'dp3'  # 'dp3' 'fp' 'focalpolicy' 'sample_dp3' 
+model_training_seed: 0
+
+vis_camera_idx: 0
+command_latency: 0.01
+
+delta_action: False  # Use delta action
+delta_rotation: False  # Include rotation in delta action
+unit_scale: 1000.0  # Delta action scaling factor
+use_rotation: True  # Whether to use rotation information
+
+crop_size: ${task.crop_size}  
+init_target_pose: ${task.init_target_pose}  
+
+pc_save_path: ./debug_data/point_cloud.pkl
+image_save_path: ./debug_data
+
+
+sample_method: 'fps'  # 'fps' or 'segment'
+
+dp3_policy:
+  _target_: diffusion_policy_3d.policy.dp3.DP3
+  use_point_crop: true
+  condition_type: film
+  use_down_condition: true
+  use_mid_condition: true
+  use_up_condition: true
+  # sample_method: ${sample_method}
+  # use_embeding: None # 'point_transformer' #  'pointmlp' 'knn_graph_label', None, 'multi_scale', 'label_embed', 'knn_graph'
+  num_points: 1024
+
+  diffusion_step_embed_dim: 128
+  down_dims:
+  - 512
+  - 1024
+  - 2048
+  crop_shape:
+  - 80
+  - 80
+  encoder_output_dim: 64
+  horizon: ${horizon}
+  kernel_size: 5
+  n_action_steps: ${n_action_steps}
+  n_groups: 8
+  n_obs_steps: ${n_obs_steps}
+
+  noise_scheduler:
+    _target_: diffusers.schedulers.scheduling_ddim.DDIMScheduler
+    num_train_timesteps: 100
+    beta_start: 0.0001
+    beta_end: 0.02
+    beta_schedule: squaredcos_cap_v2
+    clip_sample: True
+    set_alpha_to_one: True
+    steps_offset: 0
+    prediction_type: sample
+
+  num_inference_steps: 10
+  obs_as_global_cond: true
+  shape_meta: ${task.shape_meta}
+
+  use_pc_color: True
+  pointnet_type: "pointnet"
+
+
+  pointcloud_encoder_cfg:
+    in_channels: 3
+    out_channels: ${dp3_policy.encoder_output_dim}
+    use_layernorm: true
+    final_norm: layernorm # layernorm, none
+    normal_channel: false
+
+simple_dp3_policy:
+  _target_: diffusion_policy_3d.policy.simple_dp3.SimpleDP3
+  use_point_crop: true
+  condition_type: film
+  use_down_condition: true
+  use_mid_condition: true
+  use_up_condition: true
+  
+  diffusion_step_embed_dim: 128
+  down_dims:
+  - 128
+  - 256
+  - 384
+  crop_shape:
+  - 80
+  - 80
+  encoder_output_dim: 64
+  horizon: ${horizon}
+  kernel_size: 5
+  n_action_steps: ${n_action_steps}
+  n_groups: 8
+  n_obs_steps: ${n_obs_steps}
+
+  noise_scheduler:
+    _target_: diffusers.schedulers.scheduling_ddim.DDIMScheduler
+    num_train_timesteps: 100
+    beta_start: 0.0001
+    beta_end: 0.02
+    beta_schedule: squaredcos_cap_v2
+    clip_sample: True
+    set_alpha_to_one: True
+    steps_offset: 0
+    prediction_type: sample
+
+
+  num_inference_steps: 10
+  obs_as_global_cond: true
+  shape_meta: ${task.shape_meta}
+
+
+
+  # whether to use point cloud's color
+  use_pc_color: false
+  # type of pointnet
+  pointnet_type: "pointnet"
+
+
+  pointcloud_encoder_cfg:
+    in_channels: 3
+    out_channels: ${simple_dp3_policy.encoder_output_dim}
+    use_layernorm: true
+    final_norm: layernorm # layernorm, none
+    normal_channel: false
+
+
+fp_policy:
+  _target_: flow_policy_3d.policy.flowpolicy.FlowPolicy
+  use_point_crop: true
+  condition_type: film
+  use_down_condition: true
+  use_mid_condition: true
+  use_up_condition: true
+  sample_method: ${sample_method}
+  use_embeding: None # 'point_transformer' #  'pointmlp' 'knn_graph_label', None, 'multi_scale', 'label_embed', 'knn_graph'
+  num_points: 1024
+  
+  diffusion_step_embed_dim: 128
+  down_dims:
+  - 512
+  - 1024
+  - 2048
+  crop_shape:
+  - 84
+  - 84
+  encoder_output_dim: 64
+  horizon: ${horizon}
+  kernel_size: 5
+  n_action_steps: ${n_action_steps}
+  n_groups: 8
+  n_obs_steps: ${n_obs_steps}
+  obs_as_global_cond: true
+  shape_meta: ${task.shape_meta}
+
+  use_pc_color: true
+  pointnet_type: "mlp"
+
+  pointcloud_encoder_cfg:
+    in_channels: 3
+    out_channels: ${fp_policy.encoder_output_dim}
+    use_layernorm: true
+    final_norm: layernorm # layernorm, none
+    normal_channel: false
+
+focal_policy:
+  _target_: flow_policy_3d.policy.tfflowpolicy.TFFlowPolicy
+  use_point_crop: true
+  condition_type: film
+  use_down_condition: true
+  use_mid_condition: true
+  use_up_condition: true
+  num_points: 1024
+  
+  diffusion_step_embed_dim: 128
+  down_dims:
+  - 512
+  - 1024
+  - 2048
+  crop_shape:
+  - 84
+  - 84
+  encoder_output_dim: 64
+  horizon: ${horizon}
+  kernel_size: 5
+  n_action_steps: ${n_action_steps}
+  n_groups: 8
+  n_obs_steps: ${n_obs_steps}
+  obs_as_global_cond: true
+  shape_meta: ${task.shape_meta}
+  
+  use_pc_color: false
+  pointnet_type: "mlp"
+
+  freq_weight: 1e-4
+
+
+  pointcloud_encoder_cfg:
+    in_channels: 3
+    out_channels: ${tff_policy.encoder_output_dim}
+    use_layernorm: true
+    final_norm: layernorm # layernorm, none
+    normal_channel: false
+  
+
+  _target_: flow_policy_3d.policy.meta_dp3_MAML_text_context3.DP3
+  # _target_: diffusion_policy_3d.policy.meta_dp3_MAML_baseline.DP3
+  # _target_: diffusion_policy_3d.policy.dp3_raw.DP3
+  use_point_crop: true
+  condition_type: film
+  # condition_type: cross_attention_film
+  use_down_condition: true
+  use_mid_condition: true
+  use_up_condition: true
+  action_feature_dim: 128
+
+  task_numbers: 5
+  query_per_class: 88
+ 
+  diffusion_step_embed_dim: 128
+  down_dims:
+  - 512
+  - 1024
+  - 2048
+  crop_shape:
+  - 80
+  - 80
+  encoder_output_dim: 64
+  horizon: ${horizon}
+  kernel_size: 5
+  n_action_steps: ${n_action_steps}
+  n_groups: 8
+  n_obs_steps: ${n_obs_steps}
+
+  noise_scheduler:
+    _target_: diffusers.schedulers.scheduling_ddim.DDIMScheduler
+    num_train_timesteps: 100
+    beta_start: 0.0001
+    beta_end: 0.02
+    beta_schedule: squaredcos_cap_v2
+    clip_sample: True
+    set_alpha_to_one: True
+    steps_offset: 0
+    prediction_type: sample
+
+
+  num_inference_steps: 10
+  obs_as_global_cond: true
+  shape_meta: ${task.shape_meta}
+
+  use_pc_color: false
+  pointnet_type: "pointnet"
+
+
+  pointcloud_encoder_cfg:
+    in_channels: 3
+    out_channels: ${multi_dp3_policy.encoder_output_dim}
+    use_layernorm: true
+    final_norm: layernorm # layernorm, none
+    normal_channel: false

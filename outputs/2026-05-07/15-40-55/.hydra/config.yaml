@@ -1,0 +1,330 @@
+horizon: 8
+n_obs_steps: 1
+n_action_steps: 8
+robot_ip: 192.168.1.9
+frequency: 30
+output: /home/hq/PROJECT/FlowPolicy/real_world/output
+data_dir: /media/hq/Ubuntu_DATA/RAL_DATA/${task.name}
+load_checkpoint_from: path/to/checkpoint
+policy_name: dp3
+model_training_seed: 0
+vis_camera_idx: 0
+command_latency: 0.01
+delta_action: false
+delta_rotation: false
+unit_scale: 1000.0
+use_rotation: true
+crop_size: ${task.crop_size}
+init_target_pose: ${task.init_target_pose}
+pc_save_path: /home/hq/PROJECT/FlowPolicy/real_world/data/debug_data/point_cloud.pkl
+image_save_path: /home/hq/PROJECT/FlowPolicy/real_world/data/debug_data
+sample_method: segment
+dp3_policy:
+  _target_: diffusion_policy_3d.policy.dp3.DP3
+  use_point_crop: true
+  condition_type: film
+  use_down_condition: true
+  use_mid_condition: true
+  use_up_condition: true
+  num_points: 1024
+  diffusion_step_embed_dim: 128
+  down_dims:
+  - 512
+  - 1024
+  - 2048
+  crop_shape:
+  - 80
+  - 80
+  encoder_output_dim: 64
+  horizon: ${horizon}
+  kernel_size: 5
+  n_action_steps: ${n_action_steps}
+  n_groups: 8
+  n_obs_steps: ${n_obs_steps}
+  noise_scheduler:
+    _target_: diffusers.schedulers.scheduling_ddim.DDIMScheduler
+    num_train_timesteps: 100
+    beta_start: 0.0001
+    beta_end: 0.02
+    beta_schedule: squaredcos_cap_v2
+    clip_sample: true
+    set_alpha_to_one: true
+    steps_offset: 0
+    prediction_type: sample
+  num_inference_steps: 10
+  obs_as_global_cond: true
+  shape_meta: ${task.shape_meta}
+  use_pc_color: true
+  pointnet_type: pointnet
+  pointcloud_encoder_cfg:
+    in_channels: 3
+    out_channels: ${dp3_policy.encoder_output_dim}
+    use_layernorm: true
+    final_norm: layernorm
+    normal_channel: false
+multi_dp3_policy:
+  _target_: flow_policy_3d.policy.dp3_raw.DP3
+  use_point_crop: true
+  condition_type: film
+  use_down_condition: true
+  use_mid_condition: true
+  use_up_condition: true
+  action_feature_dim: 128
+  task_numbers: 5
+  query_per_class: 88
+  diffusion_step_embed_dim: 128
+  down_dims:
+  - 512
+  - 1024
+  - 2048
+  crop_shape:
+  - 80
+  - 80
+  encoder_output_dim: 64
+  horizon: ${horizon}
+  kernel_size: 5
+  n_action_steps: ${n_action_steps}
+  n_groups: 8
+  n_obs_steps: ${n_obs_steps}
+  noise_scheduler:
+    _target_: diffusers.schedulers.scheduling_ddim.DDIMScheduler
+    num_train_timesteps: 100
+    beta_start: 0.0001
+    beta_end: 0.02
+    beta_schedule: squaredcos_cap_v2
+    clip_sample: true
+    set_alpha_to_one: true
+    steps_offset: 0
+    prediction_type: sample
+  num_inference_steps: 10
+  obs_as_global_cond: true
+  shape_meta: ${task.shape_meta}
+  use_pc_color: false
+  pointnet_type: pointnet
+  pointcloud_encoder_cfg:
+    in_channels: 3
+    out_channels: ${multi_dp3_policy.encoder_output_dim}
+    use_layernorm: true
+    final_norm: layernorm
+    normal_channel: false
+simple_dp3_policy:
+  _target_: diffusion_policy_3d.policy.simple_dp3.SimpleDP3
+  use_point_crop: true
+  condition_type: film
+  use_down_condition: true
+  use_mid_condition: true
+  use_up_condition: true
+  diffusion_step_embed_dim: 128
+  down_dims:
+  - 128
+  - 256
+  - 384
+  crop_shape:
+  - 80
+  - 80
+  encoder_output_dim: 64
+  horizon: ${horizon}
+  kernel_size: 5
+  n_action_steps: ${n_action_steps}
+  n_groups: 8
+  n_obs_steps: ${n_obs_steps}
+  noise_scheduler:
+    _target_: diffusers.schedulers.scheduling_ddim.DDIMScheduler
+    num_train_timesteps: 100
+    beta_start: 0.0001
+    beta_end: 0.02
+    beta_schedule: squaredcos_cap_v2
+    clip_sample: true
+    set_alpha_to_one: true
+    steps_offset: 0
+    prediction_type: sample
+  num_inference_steps: 10
+  obs_as_global_cond: true
+  shape_meta: ${task.shape_meta}
+  use_pc_color: false
+  pointnet_type: pointnet
+  pointcloud_encoder_cfg:
+    in_channels: 3
+    out_channels: ${simple_dp3_policy.encoder_output_dim}
+    use_layernorm: true
+    final_norm: layernorm
+    normal_channel: false
+fp_policy:
+  _target_: flow_policy_3d.policy.flowpolicy.FlowPolicy
+  use_point_crop: true
+  condition_type: film
+  use_down_condition: true
+  use_mid_condition: true
+  use_up_condition: true
+  sample_method: ${sample_method}
+  use_embeding: None
+  num_points: 1024
+  diffusion_step_embed_dim: 128
+  down_dims:
+  - 512
+  - 1024
+  - 2048
+  crop_shape:
+  - 84
+  - 84
+  encoder_output_dim: 64
+  horizon: ${horizon}
+  kernel_size: 5
+  n_action_steps: ${n_action_steps}
+  n_groups: 8
+  n_obs_steps: ${n_obs_steps}
+  obs_as_global_cond: true
+  shape_meta: ${task.shape_meta}
+  use_pc_color: true
+  pointnet_type: mlp
+  pointcloud_encoder_cfg:
+    in_channels: 3
+    out_channels: ${fp_policy.encoder_output_dim}
+    use_layernorm: true
+    final_norm: layernorm
+    normal_channel: false
+tff_policy:
+  _target_: flow_policy_3d.policy.tfflowpolicy.TFFlowPolicy
+  use_point_crop: true
+  condition_type: film
+  use_down_condition: true
+  use_mid_condition: true
+  use_up_condition: true
+  num_points: 1024
+  diffusion_step_embed_dim: 128
+  down_dims:
+  - 512
+  - 1024
+  - 2048
+  crop_shape:
+  - 84
+  - 84
+  encoder_output_dim: 64
+  horizon: ${horizon}
+  kernel_size: 5
+  n_action_steps: ${n_action_steps}
+  n_groups: 8
+  n_obs_steps: ${n_obs_steps}
+  obs_as_global_cond: true
+  shape_meta: ${task.shape_meta}
+  use_pc_color: false
+  pointnet_type: mlp
+  freq_weight: 0.0001
+  pointcloud_encoder_cfg:
+    in_channels: 3
+    out_channels: ${tff_policy.encoder_output_dim}
+    use_layernorm: true
+    final_norm: layernorm
+    normal_channel: false
+multi_mmad_policy:
+  _target_: flow_policy_3d.policy.meta_dp3_MAML_text_context3.DP3
+  use_point_crop: true
+  condition_type: film
+  use_down_condition: true
+  use_mid_condition: true
+  use_up_condition: true
+  action_feature_dim: 128
+  task_numbers: 5
+  query_per_class: 88
+  diffusion_step_embed_dim: 128
+  down_dims:
+  - 512
+  - 1024
+  - 2048
+  crop_shape:
+  - 80
+  - 80
+  encoder_output_dim: 64
+  horizon: ${horizon}
+  kernel_size: 5
+  n_action_steps: ${n_action_steps}
+  n_groups: 8
+  n_obs_steps: ${n_obs_steps}
+  noise_scheduler:
+    _target_: diffusers.schedulers.scheduling_ddim.DDIMScheduler
+    num_train_timesteps: 100
+    beta_start: 0.0001
+    beta_end: 0.02
+    beta_schedule: squaredcos_cap_v2
+    clip_sample: true
+    set_alpha_to_one: true
+    steps_offset: 0
+    prediction_type: sample
+  num_inference_steps: 10
+  obs_as_global_cond: true
+  shape_meta: ${task.shape_meta}
+  use_pc_color: false
+  pointnet_type: pointnet
+  pointcloud_encoder_cfg:
+    in_channels: 3
+    out_channels: ${multi_dp3_policy.encoder_output_dim}
+    use_layernorm: true
+    final_norm: layernorm
+    normal_channel: false
+task:
+  name: 2_seg_real_stack_cube
+  iou_conf:
+  - - 0.9
+    - 0.2
+  - - 0.9
+    - 0.2
+  image_shape:
+  - 3
+  - 720
+  - 1280
+  init_target_pose:
+  - -0.154
+  - -0.473
+  - 0.316
+  - 1.682
+  - -1.784
+  - 0.789
+  crop_size: large
+  shape_meta:
+    obs:
+      camera_0:
+        shape: ${task.image_shape}
+        type: rgb
+      point_cloud:
+        shape:
+        - 1024
+        - 6
+        type: point_cloud
+      agent_pos:
+        shape:
+        - 4
+        type: low_dimx
+    action:
+      shape:
+      - 4
+  env_runner: null
+  dataset:
+    _target_: flow_policy_3d.dataset.realdex_dataset.RealDexDataset
+    zarr_path: /media/hq/Ubuntu_DATA/RAL_DATA/2_seg_real_stack_cube/2_seg_real_stack_cube_SCL1000_SKP3_ST3_100RST10_DX_1024_PT4_large/learn.zarr
+    sample_method: ${sample_method}
+    horizon: ${horizon}
+    pad_before: ${eval:'${n_obs_steps}-1'}
+    pad_after: ${eval:'${n_action_steps}-1'}
+    seed: 42
+    val_ratio: 0
+    max_train_episodes: 99999
+  eval_dataset:
+    _target_: flow_policy_3d.dataset.realdex_dataset.RealDexDataset
+    zarr_path: /media/hq/Ubuntu_DATA/RAL_DATA/2_seg_real_stack_cube/2_seg_real_stack_cube_SCL1000_SKP3_ST3_100RST10_DX_1024_PT4_large/val.zarr
+    sample_method: ${sample_method}
+    horizon: ${horizon}
+    pad_before: ${eval:'${n_obs_steps}-1'}
+    pad_after: ${eval:'${n_action_steps}-1'}
+    seed: 42
+    val_ratio: 0
+    max_train_episodes: 99999
+  test_dataset:
+    _target_: flow_policy_3d.dataset.realdex_dataset.RealDexDataset
+    zarr_path: /media/hq/Ubuntu_DATA/RAL_DATA/2_seg_real_stack_cube/2_seg_real_stack_cube_SCL1000_SKP3_ST3_100RST10_DX_1024_PT4_large/test.zarr
+    sample_method: ${sample_method}
+    horizon: ${horizon}
+    pad_before: ${eval:'${n_obs_steps}-1'}
+    pad_after: ${eval:'${n_action_steps}-1'}
+    seed: 42
+    val_ratio: 0
+    max_train_episodes: 99999

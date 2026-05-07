@@ -1,0 +1,55 @@
+name: water_pouring
+
+image_shape: [3, 720, 1280]
+init_target_pose: [-0.154, -0.470, 0.34, 1.597, -1.775, 0.883]
+crop_size: 'middle'  
+
+shape_meta: &shape_meta
+  # acceptable types: rgb, low_dim
+  obs:
+    camera_0:
+      shape: ${task.image_shape}
+      type: rgb
+    point_cloud:
+      shape: [1024, 6]
+      type: point_cloud
+    agent_pos:
+      shape: [7]
+      type: low_dimx
+  action:
+    shape: [7]
+
+env_runner: null
+
+dataset:
+  _target_: flow_policy_3d.dataset.realdex_dataset.RealDexDataset
+  zarr_path: data/example/learn.zarr
+  sample_method: ${sample_method}
+  horizon: ${horizon}
+  pad_before: ${eval:'${n_obs_steps}-1'}
+  pad_after: ${eval:'${n_action_steps}-1'}
+  seed: 42
+  val_ratio: 0
+  max_train_episodes: 99999
+
+eval_dataset:
+  _target_: flow_policy_3d.dataset.realdex_dataset.RealDexDataset
+  zarr_path: data/example/val.zarr
+  sample_method: ${sample_method}
+  horizon: ${horizon}
+  pad_before: ${eval:'${n_obs_steps}-1'}
+  pad_after: ${eval:'${n_action_steps}-1'}
+  seed: 42
+  val_ratio: 0
+  max_train_episodes: 99999
+
+test_dataset:
+  _target_: flow_policy_3d.dataset.realdex_dataset.RealDexDataset
+  zarr_path: data/example/test.zarr
+  sample_method: ${sample_method}
+  horizon: ${horizon}
+  pad_before: ${eval:'${n_obs_steps}-1'}
+  pad_after: ${eval:'${n_action_steps}-1'}
+  seed: 42
+  val_ratio: 0
+  max_train_episodes: 99999
